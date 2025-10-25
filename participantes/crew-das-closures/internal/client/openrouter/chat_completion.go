@@ -11,11 +11,8 @@ import (
 
 type (
 	OpenRouterRequest struct {
-		Model    string `json:"model"`
-		Messages []struct {
-			Role    string `json:"role"`
-			Content string `json:"content"`
-		} `json:"messages"`
+		Model    string    `json:"model"`
+		Messages []Message `json:"messages"`
 	}
 
 	OpenRouterResponse struct {
@@ -30,31 +27,23 @@ type (
 		ServiceID   uint8  `json:"service_id"`
 		ServiceName string `json:"service_name"`
 	}
-)
 
-func (c *Client) ChatCompletion(ctx context.Context, intent string) (*DataResponse, error) {
-	url := c.baseURL + "/chat/completions"
-
-	requestBody := OpenRouterRequest{
-		Model: "<definir_modelo>",
-		Messages: []struct {
-			Role    string `json:"role"`
-			Content string `json:"content"`
-		}{
-			{
-				Role: "system",
-				Content: `Aqui você define as instruções para o modelo de linguagem, 
-        incluindo o comportamento esperado, o formato da resposta e quaisquer diretrizes específicas 
-        que ele deve seguir ao processar as solicitações dos usuários.`,
-			},
-			{
-				Role:    "user",
-				Content: intent,
-			},
-		},
+	ContextPrompt struct {
+		Prompt   string    `json:"prompt"`
+		Model    string    `json:"model"`
+		Messages []Message `json:"messages"`
 	}
 
-	jsonBody, err := json.Marshal(requestBody)
+	Message struct {
+		Role    string `json:"role"`
+		Content string `json:"content"`
+	}
+)
+
+func (c *Client) ChatCompletion(ctx context.Context, request OpenRouterRequest) (*DataResponse, error) {
+	url := c.baseURL + "/chat/completions"
+
+	jsonBody, err := json.Marshal(request)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling request: %v", err)
 	}

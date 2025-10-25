@@ -2,6 +2,8 @@ package service
 
 import (
 	"fmt"
+	"net/http"
+	"os"
 
 	"github.com/spf13/cobra"
 )
@@ -36,6 +38,27 @@ type HealthResponse struct {
 	Status string `json:"status"`
 }
 
-func Service(cmd *cobra.Command, args []string) {
-	fmt.Println("service called")
+func Service(cmd *cobra.Command, args []string) error {
+	// Read environment variables
+	openRouterKey := os.Getenv("OPENROUTER_API_KEY")
+	if openRouterKey == "" {
+		return fmt.Errorf("environment variable OPENROUTER_API_KEY is required")
+	}
+
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "18020"
+	}
+
+	router := http.NewServeMux()
+
+	server := http.Server{
+		Addr:    fmt.Sprintf(":%s", port),
+		Handler: router,
+	}
+
+	router.HandleFunc("GET /api/health", healthHandler)
+	router.HandleFunc("POST /api/find-service", findServiceHandler(openRouterKey))
+
+	return server.ListenAndServe()
 }
