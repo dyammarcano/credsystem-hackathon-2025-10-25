@@ -3,8 +3,10 @@ package core
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/dyammarcano/crew-das-closures/internal/client/openrouter"
@@ -17,6 +19,8 @@ type Core struct {
 	*prompt.PromptManager
 }
 
+var findReqPool = sync.Pool{New: func() any { return new(model.FindServiceRequest) }}
+
 func NewCore(urlStr string, opts openrouter.Option) (*Core, error) {
 	return &Core{
 		Client:        openrouter.NewClient(urlStr, opts),
@@ -28,10 +32,14 @@ func NewCore(urlStr string, opts openrouter.Option) (*Core, error) {
 // coherence issues between input and output. Diagnostics are returned to help
 // detect problems early when integrating with external APIs.
 func (c *Core) AskQuestion(question []byte) (*model.FindServiceResponse, error) {
-	obj := &model.FindServiceRequest{}
+	obj := findReqPool.Get().(*model.FindServiceRequest)
+	// reset fields (only one field now, but future-proof)
+	*obj = model.FindServiceRequest{}
 	if err := json.Unmarshal(question, obj); err != nil {
+		findReqPool.Put(obj)
 		return nil, err
 	}
+	defer findReqPool.Put(obj)
 
 	// montar o prompt para o OpenRouter com base no obj.Intent
 	result, err := c.PromptManager.GenerateModelSpecificPrompt(obj.Intent)
@@ -49,7 +57,7 @@ func (c *Core) AskQuestion(question []byte) (*model.FindServiceResponse, error) 
 	msgs = append(msgs, msg)
 
 	oRequest := &openrouter.OpenRouterRequest{
-		Model:    c.PromptManager.GetModelName(),
+		Model:    "gpt-4o",
 		Messages: msgs,
 	}
 
@@ -61,12 +69,18 @@ func (c *Core) AskQuestion(question []byte) (*model.FindServiceResponse, error) 
 		return nil, err
 	}
 
+	// Normalize/validate the model output against the canonical service registry
+	normalizedID, normalizedName, normDiag := c.normalizeServicePair(response.ServiceID, response.ServiceName)
+
 	sData := &model.ServiceData{
-		ServiceID:   response.ServiceID,
-		ServiceName: response.ServiceName,
+		ServiceID:   normalizedID,
+		ServiceName: normalizedName,
 	}
 
 	diagnostics := analyzeCoherence(obj, sData)
+	if normDiag != "" {
+		diagnostics = append(diagnostics, normDiag)
+	}
 
 	if len(diagnostics) > 0 {
 		// logar os diagnósticos para análise futura
@@ -120,4 +134,56 @@ func analyzeCoherence(req *model.FindServiceRequest, data *model.ServiceData) []
 	}
 
 	return issues
+}
+
+// normalizeServicePair validates and corrects the (id,name) pair returned by the model
+// against the canonical service registry. It returns the normalized id/name and an
+// optional diagnostic string when a correction is applied.
+func (c *Core) normalizeServicePair(id uint8, name string) (uint8, string, string) {
+	services := c.PromptManager.GetServiceDefinitions()
+	nameToID := make(map[string]uint8, len(services))
+	idToName := make(map[uint8]string, len(services))
+
+	for _, s := range services {
+		idToName[uint8(s.ID)] = s.Name
+		nameToID[s.Name] = uint8(s.ID)
+	}
+
+	trimmed := strings.TrimSpace(name)
+	if trimmed != "" {
+		// Exact name match (case-sensitive first)
+		if correctID, ok := nameToID[trimmed]; ok {
+			if correctID != id {
+				return correctID, idToName[correctID],
+					fmt.Sprintf("normalized: corrected service_id from %d to %d based on service_name", id, correctID)
+			}
+			// id matches name; ensure canonical casing/name
+			return id, trimmed, ""
+		}
+		// Case-insensitive name match: find canonical name
+		lower := strings.ToLower(trimmed)
+		for canonName, canonID := range nameToID {
+			if strings.ToLower(canonName) == lower {
+				if canonID != id || canonName != trimmed {
+					return canonID, canonName,
+						fmt.Sprintf("normalized: corrected service to (id=%d,name=%q) based on case-insensitive name match", canonID, canonName)
+				}
+				return id, canonName, ""
+			}
+		}
+	}
+
+	// If name didn't help, try id
+	if canonName, ok := idToName[id]; ok {
+		if canonName != trimmed {
+			return id, canonName,
+				fmt.Sprintf("normalized: corrected service_name from %q to %q based on service_id", trimmed, canonName)
+		}
+		return id, canonName, ""
+	}
+
+	// Unknown pair: fall back
+	fallback := c.PromptManager.GetFallbackService()
+	return uint8(fallback.ID), fallback.Name,
+		fmt.Sprintf("normalized: unknown service pair (id=%d,name=%q), falling back to %q", id, name, fallback.Name)
 }

@@ -11,6 +11,7 @@ import (
 )
 
 var bufPool = sync.Pool{New: func() any { return new(bytes.Buffer) }}
+var openRouterRespPool = sync.Pool{New: func() any { return new(OpenRouterResponse) }}
 
 type (
 	OpenRouterRequest struct {
@@ -87,23 +88,28 @@ func (c *Client) ChatCompletion(ctx context.Context, request *OpenRouterRequest)
 		return nil, fmt.Errorf("API request failed with status %d", resp.StatusCode)
 	}
 
-	var openRouterResp OpenRouterResponse
+	openRouterResp := openRouterRespPool.Get().(*OpenRouterResponse)
+	*openRouterResp = OpenRouterResponse{}
 	dec := json.NewDecoder(resp.Body)
-	if err := dec.Decode(&openRouterResp); err != nil {
+	if err := dec.Decode(openRouterResp); err != nil {
+		openRouterRespPool.Put(openRouterResp)
 		return nil, fmt.Errorf("error decoding response: %v", err)
 	}
 
 	if len(openRouterResp.Choices) == 0 {
+		openRouterRespPool.Put(openRouterResp)
 		return nil, fmt.Errorf("no choices in response")
 	}
 
 	reasoning, response, err := filterReasoning(openRouterResp.Choices)
+	// Return the pooled object after extracting needed data
+	openRouterRespPool.Put(openRouterResp)
 	if err != nil {
 		return nil, fmt.Errorf("error filtering reasoning: %v", err)
 	}
 
 	var dataRes DataResponse
-	if err := json.Unmarshal([]byte(response), &dataRes); err != nil {
+	if err := json.NewDecoder(strings.NewReader(response)).Decode(&dataRes); err != nil {
 		return nil, fmt.Errorf("error unmarshaling data response: %v", err)
 	}
 

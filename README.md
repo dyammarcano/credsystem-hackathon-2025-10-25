@@ -37,7 +37,7 @@ O desafio é criar um serviço que expõe 2 endpoints RESTful:
         "success": "bool",
         "data": {
           "service_id": "int",
-          "service_name": "string",
+          "service_name": "string"
         },
         "error": "string"
       }

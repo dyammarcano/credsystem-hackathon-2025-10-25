@@ -1,10 +1,12 @@
 package service
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+	"sync"
 
 	"github.com/dyammarcano/crew-das-closures/internal/core"
 	"github.com/dyammarcano/crew-das-closures/internal/model"
@@ -71,14 +73,25 @@ func forceStatusOK(next http.Handler) http.Handler {
 	})
 }
 
+var respBufPool = sync.Pool{New: func() any { return new(bytes.Buffer) }}
+
 func responseJSON(w http.ResponseWriter, statusCode int, v any) {
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(statusCode)
-	if err := json.NewEncoder(w).Encode(v); err != nil {
+
+	buf := respBufPool.Get().(*bytes.Buffer)
+	buf.Reset()
+	enc := json.NewEncoder(buf)
+	if err := enc.Encode(v); err != nil {
+		buf.Reset()
+		respBufPool.Put(buf)
 		// Keep compliance: always return 200 with JSON body, even on encoding errors
-		w.Header().Set("Content-Type", "application/json")
-		// Ensure status is 200 (middleware will enforce anyway), and write a minimal JSON error
+		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte(`{"success":false,"error":"internal server error"}`))
 		return
 	}
+
+	w.WriteHeader(statusCode)
+	_, _ = w.Write(buf.Bytes())
+	buf.Reset()
+	respBufPool.Put(buf)
 }
