@@ -14,10 +14,9 @@ type FindServiceRequest struct {
 
 // FindServiceResponse representa el response del endpoint
 type FindServiceResponse struct {
-	Success     bool         `json:"success"`
-	Data        *ServiceData `json:"data,omitempty"`
-	Error       string       `json:"error,omitempty"`
-	Diagnostics []string     `json:"diagnostics,omitempty"`
+	Success bool         `json:"success"`
+	Data    *ServiceData `json:"data,omitempty"`
+	Error   string       `json:"error,omitempty"`
 }
 
 // ServiceData contiene los datos del servicio

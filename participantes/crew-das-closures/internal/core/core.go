@@ -89,10 +89,22 @@ func (c *Core) AskQuestion(question []byte) (*model.FindServiceResponse, error) 
 		}
 	}
 
+	state := len(diagnostics) == 0
+
+	if !state {
+		sData.ServiceID = 0
+		sData.ServiceName = ""
+
+		return &model.FindServiceResponse{
+			Success: false,
+			Data:    sData,
+			Error:   "coherence issues detected between request and response",
+		}, nil
+	}
+
 	return &model.FindServiceResponse{
-		Success:     len(diagnostics) == 0,
-		Data:        sData,
-		Diagnostics: diagnostics,
+		Success: state,
+		Data:    sData,
 	}, nil
 }
 
