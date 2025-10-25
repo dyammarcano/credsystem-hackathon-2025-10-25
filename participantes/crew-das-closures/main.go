@@ -22,7 +22,7 @@ THE SOFTWARE.
 
 package main
 
-import "github.com/dyammarcano/crew-das-clousures/cmd"
+import "github.com/dyammarcano/crew-das-closures/cmd"
 
 func main() {
 	cmd.Execute()

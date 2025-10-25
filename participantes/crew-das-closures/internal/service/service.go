@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/dyammarcano/crew-das-clousures/internal/client/openrouter"
-	"github.com/dyammarcano/crew-das-clousures/internal/core"
+	"github.com/dyammarcano/crew-das-closures/internal/client/openrouter"
+	"github.com/dyammarcano/crew-das-closures/internal/core"
 	"github.com/spf13/cobra"
 )
 

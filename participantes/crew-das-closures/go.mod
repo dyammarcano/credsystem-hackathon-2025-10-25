@@ -1,4 +1,4 @@
-module github.com/dyammarcano/crew-das-clousures
+module github.com/dyammarcano/crew-das-closures
 
 go 1.24
 

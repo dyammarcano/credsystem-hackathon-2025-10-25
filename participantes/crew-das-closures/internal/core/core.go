@@ -3,8 +3,8 @@ package core
 import (
 	"encoding/json"
 
-	"github.com/dyammarcano/crew-das-clousures/internal/client/openrouter"
-	"github.com/dyammarcano/crew-das-clousures/internal/model"
+	"github.com/dyammarcano/crew-das-closures/internal/client/openrouter"
+	"github.com/dyammarcano/crew-das-closures/internal/model"
 )
 
 type Core struct {

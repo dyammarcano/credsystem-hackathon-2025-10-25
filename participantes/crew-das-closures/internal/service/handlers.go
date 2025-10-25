@@ -6,8 +6,8 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/dyammarcano/crew-das-clousures/internal/core"
-	"github.com/dyammarcano/crew-das-clousures/internal/model"
+	"github.com/dyammarcano/crew-das-closures/internal/core"
+	"github.com/dyammarcano/crew-das-closures/internal/model"
 )
 
 func healthHandler(w http.ResponseWriter, _ *http.Request) {

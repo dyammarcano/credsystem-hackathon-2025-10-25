@@ -25,12 +25,12 @@ package cmd
 import (
 	"os"
 
-	"github.com/dyammarcano/crew-das-clousures/internal/service"
+	"github.com/dyammarcano/crew-das-closures/internal/service"
 	"github.com/spf13/cobra"
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "crew-das-clousures",
+	Use:   "crew-das-closures",
 	Short: "A brief description of your application",
 	RunE:  service.Service,
 }
