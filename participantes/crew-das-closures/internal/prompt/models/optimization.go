@@ -16,20 +16,20 @@ type ModelSelector struct {
 
 // ModelConfig holds configuration for model selection
 type ModelConfig struct {
-	PrimaryModel   string  `json:"primary_model"`
-	FallbackModel  string  `json:"fallback_model"`
-	CostThreshold  float64 `json:"cost_threshold"`
-	EnableMonitoring bool  `json:"enable_monitoring"`
+	PrimaryModel     string  `json:"primary_model"`
+	FallbackModel    string  `json:"fallback_model"`
+	CostThreshold    float64 `json:"cost_threshold"`
+	EnableMonitoring bool    `json:"enable_monitoring"`
 }
 
 // RequestComplexity represents the complexity analysis of a user request
 type RequestComplexity struct {
-	Score       float64 `json:"score"`
-	WordCount   int     `json:"word_count"`
-	HasNumbers  bool    `json:"has_numbers"`
-	HasSpecialChars bool `json:"has_special_chars"`
-	Language    string  `json:"language"`
-	Ambiguity   float64 `json:"ambiguity"`
+	Score           float64 `json:"score"`
+	WordCount       int     `json:"word_count"`
+	HasNumbers      bool    `json:"has_numbers"`
+	HasSpecialChars bool    `json:"has_special_chars"`
+	Language        string  `json:"language"`
+	Ambiguity       float64 `json:"ambiguity"`
 }
 
 // ModelRecommendation represents the recommended model for a request
@@ -43,13 +43,13 @@ type ModelRecommendation struct {
 
 // PerformanceMetrics holds performance data for a model
 type PerformanceMetrics struct {
-	ModelName       string        `json:"model_name"`
-	AverageLatency  time.Duration `json:"average_latency"`
-	SuccessRate     float64       `json:"success_rate"`
-	TotalRequests   int64         `json:"total_requests"`
-	FailedRequests  int64         `json:"failed_requests"`
-	LastUsed        time.Time     `json:"last_used"`
-	CostPerRequest  float64       `json:"cost_per_request"`
+	ModelName      string        `json:"model_name"`
+	AverageLatency time.Duration `json:"average_latency"`
+	SuccessRate    float64       `json:"success_rate"`
+	TotalRequests  int64         `json:"total_requests"`
+	FailedRequests int64         `json:"failed_requests"`
+	LastUsed       time.Time     `json:"last_used"`
+	CostPerRequest float64       `json:"cost_per_request"`
 }
 
 // PerformanceMonitor tracks performance metrics for different models
@@ -60,20 +60,20 @@ type PerformanceMonitor struct {
 
 // Model constants
 const (
-	ModelMistral7B    = "mistralai/mistral-7b-instruct"
-	ModelGPT4OMini    = "openai/gpt-4o-mini"
-	
+	ModelMistral7B = "mistralai/mistral-7b-instruct"
+	ModelGPT4OMini = "openai/gpt-4o-mini"
+
 	// Cost estimates (tokens per dollar - approximate)
-	MistralCostPerToken = 0.00001  // $0.01 per 1K tokens
-	GPTCostPerToken     = 0.00015  // $0.15 per 1K tokens
-	
+	MistralCostPerToken = 0.00001 // $0.01 per 1K tokens
+	GPTCostPerToken     = 0.00015 // $0.15 per 1K tokens
+
 	// Complexity thresholds
 	LowComplexityThreshold    = 1.5
 	MediumComplexityThreshold = 3.5
 	HighComplexityThreshold   = 4.0
-	
+
 	// Performance thresholds
-	MaxAcceptableLatency = 5 * time.Second
+	MaxAcceptableLatency     = 5 * time.Second
 	MinAcceptableSuccessRate = 0.85
 )
 
@@ -93,22 +93,22 @@ func NewModelSelectorWithConfig(config ModelConfig) *ModelSelector {
 	if primaryModel == "" {
 		primaryModel = ModelMistral7B
 	}
-	
+
 	fallbackModel := config.FallbackModel
 	if fallbackModel == "" {
 		fallbackModel = ModelGPT4OMini
 	}
-	
+
 	costThreshold := config.CostThreshold
 	if costThreshold <= 0 {
 		costThreshold = 0.001
 	}
-	
+
 	var monitor *PerformanceMonitor
 	if config.EnableMonitoring {
 		monitor = NewPerformanceMonitor()
 	}
-	
+
 	return &ModelSelector{
 		primaryModel:   primaryModel,
 		fallbackModel:  fallbackModel,
@@ -120,14 +120,14 @@ func NewModelSelectorWithConfig(config ModelConfig) *ModelSelector {
 // SelectModel chooses the optimal model based on request complexity and performance data
 func (ms *ModelSelector) SelectModel(userIntent string) ModelRecommendation {
 	complexity := ms.AnalyzeComplexity(userIntent)
-	
+
 	// Get performance data for both models
 	primaryPerf := ms.performanceLog.GetMetrics(ms.primaryModel)
 	fallbackPerf := ms.performanceLog.GetMetrics(ms.fallbackModel)
-	
+
 	// Decision logic based on complexity and performance
 	recommendation := ms.makeModelDecision(complexity, primaryPerf, fallbackPerf)
-	
+
 	return recommendation
 }
 
@@ -140,19 +140,19 @@ func (ms *ModelSelector) AnalyzeComplexity(userIntent string) RequestComplexity 
 			Language:  "unknown",
 		}
 	}
-	
+
 	words := strings.Fields(userIntent)
 	wordCount := len(words)
-	
+
 	// Base complexity from word count
 	complexityScore := float64(wordCount) * 0.1
-	
+
 	// Check for numbers (might indicate specific account queries)
 	hasNumbers := strings.ContainsAny(userIntent, "0123456789")
 	if hasNumbers {
 		complexityScore += 0.5
 	}
-	
+
 	// Check for special characters (might indicate technical issues)
 	hasSpecialChars := false
 	for _, r := range userIntent {
@@ -162,25 +162,25 @@ func (ms *ModelSelector) AnalyzeComplexity(userIntent string) RequestComplexity 
 			break
 		}
 	}
-	
+
 	// Language detection (simple heuristic for Portuguese)
 	language := "unknown"
 	portugueseWords := []string{"cartão", "limite", "fatura", "conta", "senha", "boleto", "qual", "meu", "não", "como", "quando", "onde"}
 	portugueseCount := 0
 	lowerIntent := strings.ToLower(userIntent)
-	
+
 	for _, word := range portugueseWords {
 		if strings.Contains(lowerIntent, word) {
 			portugueseCount++
 		}
 	}
-	
+
 	if portugueseCount > 0 {
 		language = "pt"
 	} else {
 		complexityScore += 1.0 // Unknown language is more complex
 	}
-	
+
 	// Ambiguity detection (multiple question words, vague terms)
 	ambiguityWords := []string{"como", "quando", "onde", "por que", "qual", "quais"}
 	ambiguityScore := 0.0
@@ -189,7 +189,7 @@ func (ms *ModelSelector) AnalyzeComplexity(userIntent string) RequestComplexity 
 			ambiguityScore += 0.5
 		}
 	}
-	
+
 	// Vague terms that might require human interpretation
 	vagueTerms := []string{"problema", "erro", "não funciona", "não consigo"}
 	for _, term := range vagueTerms {
@@ -197,9 +197,9 @@ func (ms *ModelSelector) AnalyzeComplexity(userIntent string) RequestComplexity 
 			ambiguityScore += 1.0
 		}
 	}
-	
+
 	complexityScore += ambiguityScore
-	
+
 	return RequestComplexity{
 		Score:           complexityScore,
 		WordCount:       wordCount,
@@ -214,11 +214,11 @@ func (ms *ModelSelector) AnalyzeComplexity(userIntent string) RequestComplexity 
 func (ms *ModelSelector) makeModelDecision(complexity RequestComplexity, primaryPerf, fallbackPerf *PerformanceMetrics) ModelRecommendation {
 	// Estimate token count (rough approximation: 1 word ≈ 1.3 tokens)
 	estimatedTokens := float64(complexity.WordCount) * 1.3
-	
+
 	// Calculate estimated costs
 	primaryCost := estimatedTokens * MistralCostPerToken
 	fallbackCost := estimatedTokens * GPTCostPerToken
-	
+
 	// Decision matrix based on complexity
 	switch {
 	case complexity.Score <= LowComplexityThreshold:
@@ -232,7 +232,7 @@ func (ms *ModelSelector) makeModelDecision(complexity RequestComplexity, primary
 				Priority:      "cost",
 			}
 		}
-		
+
 	case complexity.Score <= MediumComplexityThreshold:
 		// Medium complexity: balance cost and accuracy
 		if primaryPerf == nil || (primaryPerf.SuccessRate >= 0.90 && primaryPerf.AverageLatency <= MaxAcceptableLatency) {
@@ -244,7 +244,7 @@ func (ms *ModelSelector) makeModelDecision(complexity RequestComplexity, primary
 				Priority:      "balanced",
 			}
 		}
-		
+
 	case complexity.Score > HighComplexityThreshold:
 		// High complexity: prioritize accuracy
 		return ModelRecommendation{
@@ -255,7 +255,7 @@ func (ms *ModelSelector) makeModelDecision(complexity RequestComplexity, primary
 			Priority:      "accuracy",
 		}
 	}
-	
+
 	// Handle ambiguous cases
 	if complexity.Ambiguity > 2.0 {
 		return ModelRecommendation{
@@ -266,7 +266,7 @@ func (ms *ModelSelector) makeModelDecision(complexity RequestComplexity, primary
 			Priority:      "accuracy",
 		}
 	}
-	
+
 	// Performance-based fallback decisions
 	if primaryPerf != nil {
 		// If primary model is failing too often, use fallback
@@ -279,7 +279,7 @@ func (ms *ModelSelector) makeModelDecision(complexity RequestComplexity, primary
 				Priority:      "reliability",
 			}
 		}
-		
+
 		// If primary model is too slow, consider fallback for time-sensitive requests
 		if primaryPerf.AverageLatency > MaxAcceptableLatency {
 			return ModelRecommendation{
@@ -291,7 +291,7 @@ func (ms *ModelSelector) makeModelDecision(complexity RequestComplexity, primary
 			}
 		}
 	}
-	
+
 	// Default to primary model
 	return ModelRecommendation{
 		ModelName:     ms.primaryModel,
@@ -305,7 +305,7 @@ func (ms *ModelSelector) makeModelDecision(complexity RequestComplexity, primary
 // OptimizeForCost returns the most cost-effective model for the given request
 func (ms *ModelSelector) OptimizeForCost(userIntent string) ModelRecommendation {
 	complexity := ms.AnalyzeComplexity(userIntent)
-	
+
 	// For cost optimization, always prefer the cheaper model unless complexity is very high
 	if complexity.Score > HighComplexityThreshold || complexity.Ambiguity > 3.0 {
 		estimatedTokens := float64(complexity.WordCount) * 1.3
@@ -317,7 +317,7 @@ func (ms *ModelSelector) OptimizeForCost(userIntent string) ModelRecommendation 
 			Priority:      "accuracy",
 		}
 	}
-	
+
 	estimatedTokens := float64(complexity.WordCount) * 1.3
 	return ModelRecommendation{
 		ModelName:     ms.primaryModel,
@@ -332,7 +332,7 @@ func (ms *ModelSelector) OptimizeForCost(userIntent string) ModelRecommendation 
 func (ms *ModelSelector) OptimizeForAccuracy(userIntent string) ModelRecommendation {
 	complexity := ms.AnalyzeComplexity(userIntent)
 	estimatedTokens := float64(complexity.WordCount) * 1.3
-	
+
 	return ModelRecommendation{
 		ModelName:     ms.fallbackModel,
 		Reason:        "Accuracy optimization: using high-performance model",
@@ -346,7 +346,7 @@ func (ms *ModelSelector) OptimizeForAccuracy(userIntent string) ModelRecommendat
 func (ms *ModelSelector) GetModelCostEstimate(userIntent, modelName string) float64 {
 	complexity := ms.AnalyzeComplexity(userIntent)
 	estimatedTokens := float64(complexity.WordCount) * 1.3
-	
+
 	switch modelName {
 	case ModelMistral7B:
 		return estimatedTokens * MistralCostPerToken
@@ -370,7 +370,7 @@ func (pm *PerformanceMonitor) RecordRequest(modelName string, latency time.Durat
 	if !pm.enabled {
 		return
 	}
-	
+
 	if pm.metrics[modelName] == nil {
 		pm.metrics[modelName] = &PerformanceMetrics{
 			ModelName:      modelName,
@@ -380,18 +380,18 @@ func (pm *PerformanceMonitor) RecordRequest(modelName string, latency time.Durat
 			CostPerRequest: cost,
 		}
 	}
-	
+
 	metrics := pm.metrics[modelName]
 	metrics.TotalRequests++
 	metrics.LastUsed = time.Now()
-	
+
 	if !success {
 		metrics.FailedRequests++
 	}
-	
+
 	// Update success rate
 	metrics.SuccessRate = float64(metrics.TotalRequests-metrics.FailedRequests) / float64(metrics.TotalRequests)
-	
+
 	// Update average latency (exponential moving average)
 	if metrics.AverageLatency == 0 {
 		metrics.AverageLatency = latency
@@ -400,7 +400,7 @@ func (pm *PerformanceMonitor) RecordRequest(modelName string, latency time.Durat
 		alpha := 0.1
 		metrics.AverageLatency = time.Duration(float64(metrics.AverageLatency)*(1-alpha) + float64(latency)*alpha)
 	}
-	
+
 	// Update average cost per request
 	if metrics.CostPerRequest == 0 {
 		metrics.CostPerRequest = cost
@@ -415,7 +415,7 @@ func (pm *PerformanceMonitor) GetMetrics(modelName string) *PerformanceMetrics {
 	if !pm.enabled {
 		return nil
 	}
-	
+
 	return pm.metrics[modelName]
 }
 
@@ -424,7 +424,7 @@ func (pm *PerformanceMonitor) GetAllMetrics() map[string]*PerformanceMetrics {
 	if !pm.enabled {
 		return nil
 	}
-	
+
 	// Return a copy to prevent external modification
 	result := make(map[string]*PerformanceMetrics)
 	for k, v := range pm.metrics {

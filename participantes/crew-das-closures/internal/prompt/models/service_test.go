@@ -211,7 +211,7 @@ func TestServiceRegistry_GetServiceNameByID(t *testing.T) {
 	}{
 		{"Valid ID 1", 1, "Consulta Limite / Vencimento do cartão / Melhor dia de compra"},
 		{"Valid ID 15", 15, "Atendimento humano"},
-		{"Invalid ID 0", 0, "Atendimento humano"}, // Should return fallback
+		{"Invalid ID 0", 0, "Atendimento humano"},   // Should return fallback
 		{"Invalid ID 17", 17, "Atendimento humano"}, // Should return fallback
 	}
 
@@ -236,7 +236,7 @@ func TestServiceRegistry_ValidateAndMapService(t *testing.T) {
 		{"Valid ID 1", 1, 1},
 		{"Valid ID 8", 8, 8},
 		{"Valid ID 16", 16, 16},
-		{"Invalid ID 0", 0, 15}, // Should return fallback (ID 15)
+		{"Invalid ID 0", 0, 15},   // Should return fallback (ID 15)
 		{"Invalid ID 17", 17, 15}, // Should return fallback (ID 15)
 		{"Invalid ID -1", -1, 15}, // Should return fallback (ID 15)
 	}
@@ -262,7 +262,7 @@ func TestServiceRegistry_CreateServiceResponse(t *testing.T) {
 	}{
 		{"Valid ID 1", 1, 1, true},
 		{"Valid ID 15", 15, 15, true},
-		{"Invalid ID 0", 0, 15, true}, // Should return fallback but still be valid
+		{"Invalid ID 0", 0, 15, true},   // Should return fallback but still be valid
 		{"Invalid ID 17", 17, 15, true}, // Should return fallback but still be valid
 	}
 

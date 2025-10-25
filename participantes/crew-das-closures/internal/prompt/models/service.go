@@ -26,9 +26,9 @@ type ClassificationRequest struct {
 
 // ClassificationResponse represents the complete response from classification
 type ClassificationResponse struct {
-	Service   ServiceResponse `json:"service"`
-	Confidence float64        `json:"confidence,omitempty"`
-	Error     string         `json:"error,omitempty"`
+	Service    ServiceResponse `json:"service"`
+	Confidence float64         `json:"confidence,omitempty"`
+	Error      string          `json:"error,omitempty"`
 }
 
 // ValidationResult represents the result of service validation

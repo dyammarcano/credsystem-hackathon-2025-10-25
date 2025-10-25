@@ -1,10 +1,10 @@
-package prompts
+package prompt
 
 import (
 	"fmt"
 	"strings"
 
-	"openrouter-integration/models"
+	"github.com/dyammarcano/crew-das-closures/internal/prompt/models"
 )
 
 // PromptManagerInterface defines the contract for prompt management operations
@@ -86,23 +86,14 @@ func (pm *PromptManager) GenerateClassificationPrompt(userIntent string) (string
 }
 
 // GenerateModelSpecificPrompt creates a prompt optimized for a specific model
-func (pm *PromptManager) GenerateModelSpecificPrompt(userIntent, modelName string) (string, error) {
+func (pm *PromptManager) GenerateModelSpecificPrompt(userIntent string) (string, error) {
 	if userIntent == "" {
 		return "", fmt.Errorf("user intent cannot be empty")
 	}
 
-	// The system prompt is already optimized. We just change the final instruction format.
-	systemPrompt := pm.GetSystemPrompt()
-
-	// For Mistral models, use a specific instruction format
-	if strings.Contains(modelName, "mistral") {
-		// Wrap the detailed prompt in Mistral's instruction format
-		return fmt.Sprintf("<s>[INST] %s [/INST]\n\nUser Intent: %s", systemPrompt, strings.TrimSpace(userIntent)), nil
-	}
-
 	// For GPT and other models, use the standard format with a clear instruction
 	return fmt.Sprintf("%s\n\nUser Intent: %s\n\nClassify this intent and provide your reasoning and the final JSON.",
-		systemPrompt,
+		pm.GetSystemPrompt(),
 		strings.TrimSpace(userIntent)), nil
 }
 
@@ -145,6 +136,10 @@ func (pm *PromptManager) GetPromptStats() map[string]interface{} {
 	stats["fallback_service_id"] = pm.fallbackService.ID
 	stats["fallback_service_name"] = pm.fallbackService.Name
 	return stats
+}
+
+func (pm *PromptManager) GetModelName() string {
+	return "gpt-4o"
 }
 
 // buildOptimizedSystemPrompt creates an optimized system prompt with all service definitions

@@ -25,17 +25,11 @@ func Service(_ *cobra.Command, _ []string) error {
 	}
 
 	urlStr := "https://openrouter.ai/api/v1"
-	token := openRouterKey
-
-	opts := openrouter.WithAuth(token)
+	opts := openrouter.WithAuth(openRouterKey)
 
 	aks, err := core.NewCore(urlStr, opts)
 	if err != nil {
 		return fmt.Errorf("failed to initialize core: %w", err)
-	}
-
-	if err := aks.SetKey(openRouterKey); err != nil {
-		return fmt.Errorf("failed to set api key: %w", err)
 	}
 
 	router.HandleFunc("GET /api/health", healthHandler)

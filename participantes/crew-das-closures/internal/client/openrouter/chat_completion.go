@@ -43,7 +43,11 @@ type (
 	}
 )
 
-func (c *Client) ChatCompletion(ctx context.Context, request OpenRouterRequest) (*DataResponse, error) {
+func (c *Client) ChatCompletion(ctx context.Context, request *OpenRouterRequest) (*DataResponse, error) {
+	if request == nil {
+		return nil, fmt.Errorf("request cannot be nil")
+	}
+
 	url := c.baseURL + "/chat/completions"
 
 	// Encode request using a pooled buffer to reduce allocations
