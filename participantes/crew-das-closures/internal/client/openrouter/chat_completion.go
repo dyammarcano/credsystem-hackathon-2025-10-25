@@ -14,30 +14,35 @@ var bufPool = sync.Pool{New: func() any { return new(bytes.Buffer) }}
 
 type (
 	OpenRouterRequest struct {
-		Model    string    `json:"model"`
-		Messages []Message `json:"messages"`
+		Model    string          `json:"model"`
+		Messages []PromptMessage `json:"messages"`
 	}
 
 	OpenRouterResponse struct {
-		Choices []struct {
-			Message struct {
-				Content string `json:"content"`
-			} `json:"message"`
-		} `json:"choices"`
+		Choices []Choice `json:"choices"`
+	}
+
+	Choice struct {
+		Message Message
+	}
+
+	Message struct {
+		Content string `json:"content"`
 	}
 
 	DataResponse struct {
 		ServiceID   uint8  `json:"service_id"`
 		ServiceName string `json:"service_name"`
+		Result      string `json:"result"`
 	}
 
 	ContextPrompt struct {
-		Prompt   string    `json:"prompt"`
-		Model    string    `json:"model"`
-		Messages []Message `json:"messages"`
+		Prompt   string          `json:"prompt"`
+		Model    string          `json:"model"`
+		Messages []PromptMessage `json:"messages"`
 	}
 
-	Message struct {
+	PromptMessage struct {
 		Role    string `json:"role"`
 		Content string `json:"content"`
 	}
@@ -92,10 +97,45 @@ func (c *Client) ChatCompletion(ctx context.Context, request *OpenRouterRequest)
 		return nil, fmt.Errorf("no choices in response")
 	}
 
+	reasoning, response, err := filterReasoning(openRouterResp.Choices)
+	if err != nil {
+		return nil, fmt.Errorf("error filtering reasoning: %v", err)
+	}
+
 	var dataRes DataResponse
-	if err := json.NewDecoder(strings.NewReader(openRouterResp.Choices[0].Message.Content)).Decode(&dataRes); err != nil {
-		return nil, fmt.Errorf("error decoding data response: %v. content: %s", err, openRouterResp.Choices[0].Message.Content)
+	if err := json.Unmarshal([]byte(response), &dataRes); err != nil {
+		return nil, fmt.Errorf("error unmarshaling data response: %v", err)
+	}
+
+	// Optionally log reasoning for debugging
+	if reasoning != "" {
+		fmt.Printf("Reasoning: %s\n", reasoning)
 	}
 
 	return &dataRes, nil
+}
+
+func filterReasoning(choices []Choice) (reasoning string, response string, err error) {
+	if len(choices) == 0 {
+		return "", "", fmt.Errorf("no choices available")
+	}
+
+	content := choices[0].Message.Content
+
+	// Find reasoning block
+	reasoningStart := strings.Index(content, "<reasoning>")
+	reasoningEnd := strings.Index(content, "</reasoning>")
+
+	if reasoningStart != -1 && reasoningEnd != -1 {
+		reasoning = strings.TrimSpace(content[reasoningStart+len("<reasoning>") : reasoningEnd])
+
+		// Get content after reasoning block
+		afterReasoning := content[reasoningEnd+len("</reasoning>"):]
+		response = strings.TrimSpace(afterReasoning)
+	} else {
+		// No reasoning block found, treat everything as response
+		response = strings.TrimSpace(content)
+	}
+
+	return reasoning, response, nil
 }

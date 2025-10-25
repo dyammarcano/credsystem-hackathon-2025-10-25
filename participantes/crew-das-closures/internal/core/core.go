@@ -39,9 +39,9 @@ func (c *Core) AskQuestion(question []byte) (*model.FindServiceResponse, error) 
 		return nil, err
 	}
 
-	var msgs []openrouter.Message
+	var msgs []openrouter.PromptMessage
 
-	msg := openrouter.Message{
+	msg := openrouter.PromptMessage{
 		Role:    "user",
 		Content: result,
 	}
@@ -56,7 +56,6 @@ func (c *Core) AskQuestion(question []byte) (*model.FindServiceResponse, error) 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
-	// chamar o OpenRouter e obter a resposta
 	response, err := c.Client.ChatCompletion(ctx, oRequest)
 	if err != nil {
 		return nil, err
