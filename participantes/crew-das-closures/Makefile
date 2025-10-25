@@ -1,7 +1,7 @@
 .DEFAULT_GOAL := build
 
 # globals
-BINARY_NAME?=crew-das-clousures
+BINARY_NAME?=<nome_do_seu_binario>
 BUILD_DIR?="./build"
 CGO_ENABLED?=0
 

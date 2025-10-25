@@ -3,7 +3,6 @@ package service
 import (
 	"fmt"
 
-	openai "github.com/sashabaranov/go-openai"
 	"github.com/spf13/cobra"
 )
 
