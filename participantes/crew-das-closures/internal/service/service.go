@@ -5,40 +5,12 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/dyammarcano/crew-das-clousures/internal/client/openrouter"
+	"github.com/dyammarcano/crew-das-clousures/internal/core"
 	"github.com/spf13/cobra"
 )
 
-// Intent representa una intención del CSV
-type Intent struct {
-	Text        string
-	ServiceID   int
-	ServiceName string
-}
-
-// FindServiceRequest representa el request del endpoint
-type FindServiceRequest struct {
-	Intent string `json:"intent"`
-}
-
-// FindServiceResponse representa el response del endpoint
-type FindServiceResponse struct {
-	Success bool         `json:"success"`
-	Data    *ServiceData `json:"data,omitempty"`
-	Error   string       `json:"error,omitempty"`
-}
-
-// ServiceData contiene los datos del servicio
-type ServiceData struct {
-	ServiceID   int    `json:"service_id"`
-	ServiceName string `json:"service_name"`
-}
-
-// HealthResponse representa el response del healthcheck
-type HealthResponse struct {
-	Status string `json:"status"`
-}
-
-func Service(cmd *cobra.Command, args []string) error {
+func Service(_ *cobra.Command, _ []string) error {
 	// Read environment variables
 	openRouterKey := os.Getenv("OPENROUTER_API_KEY")
 	if openRouterKey == "" {
@@ -54,11 +26,25 @@ func Service(cmd *cobra.Command, args []string) error {
 
 	server := http.Server{
 		Addr:    fmt.Sprintf(":%s", port),
-		Handler: router,
+		Handler: forceStatusOK(router),
+	}
+
+	urlStr := "https://openrouter.ai/api/v1"
+	token := fmt.Sprintf("%s", openRouterKey)
+
+	opts := openrouter.WithAuth(token)
+
+	aks, err := core.NewCore(urlStr, opts)
+	if err != nil {
+		return fmt.Errorf("failed to initialize core: %w", err)
+	}
+
+	if err := aks.SetKey(openRouterKey); err != nil {
+		return fmt.Errorf("failed to set api key: %w", err)
 	}
 
 	router.HandleFunc("GET /api/health", healthHandler)
-	router.HandleFunc("POST /api/find-service", findServiceHandler(openRouterKey))
+	router.HandleFunc("POST /api/find-service", findServiceHandler(aks))
 
 	return server.ListenAndServe()
 }

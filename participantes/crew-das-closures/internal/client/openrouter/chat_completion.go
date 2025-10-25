@@ -5,9 +5,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
+	"strings"
+	"sync"
 )
+
+var bufPool = sync.Pool{New: func() any { return new(bytes.Buffer) }}
 
 type (
 	OpenRouterRequest struct {
@@ -43,36 +46,42 @@ type (
 func (c *Client) ChatCompletion(ctx context.Context, request OpenRouterRequest) (*DataResponse, error) {
 	url := c.baseURL + "/chat/completions"
 
-	jsonBody, err := json.Marshal(request)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling request: %v", err)
+	// Encode request using a pooled buffer to reduce allocations
+	buf := bufPool.Get().(*bytes.Buffer)
+	buf.Reset()
+	enc := json.NewEncoder(buf)
+	if err := enc.Encode(request); err != nil {
+		buf.Reset()
+		bufPool.Put(buf)
+		return nil, fmt.Errorf("error encoding request: %v", err)
 	}
 
-	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(jsonBody))
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(buf.Bytes()))
 	if err != nil {
+		buf.Reset()
+		bufPool.Put(buf)
 		return nil, fmt.Errorf("failed to create request: %v", err)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := c.Do(ctx, req)
+	// We can safely return the buffer after request is created; to be conservative, return it after Do completes
+	buf.Reset()
+	bufPool.Put(buf)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute request: %v", err)
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("error reading response: %v", err)
-	}
-
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("API request failed with status %d: %s", resp.StatusCode, string(body))
+		return nil, fmt.Errorf("API request failed with status %d", resp.StatusCode)
 	}
 
 	var openRouterResp OpenRouterResponse
-	if err := json.Unmarshal(body, &openRouterResp); err != nil {
-		return nil, fmt.Errorf("error unmarshaling response: %v. body: %s", err, string(body))
+	dec := json.NewDecoder(resp.Body)
+	if err := dec.Decode(&openRouterResp); err != nil {
+		return nil, fmt.Errorf("error decoding response: %v", err)
 	}
 
 	if len(openRouterResp.Choices) == 0 {
@@ -80,8 +89,8 @@ func (c *Client) ChatCompletion(ctx context.Context, request OpenRouterRequest) 
 	}
 
 	var dataRes DataResponse
-	if err := json.Unmarshal([]byte(openRouterResp.Choices[0].Message.Content), &dataRes); err != nil {
-		return nil, fmt.Errorf("error unmarshaling data response: %v. content: %s", err, openRouterResp.Choices[0].Message.Content)
+	if err := json.NewDecoder(strings.NewReader(openRouterResp.Choices[0].Message.Content)).Decode(&dataRes); err != nil {
+		return nil, fmt.Errorf("error decoding data response: %v. content: %s", err, openRouterResp.Choices[0].Message.Content)
 	}
 
 	return &dataRes, nil

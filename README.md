@@ -22,48 +22,53 @@ O desafio é criar um serviço que expõe 2 endpoints RESTful:
 
 - `POST /api/find-service`
 
-  - Request Body:
+    - Request Body:
 
-    ```json
-    {
-      "intent": "string"
-    }
-    ```
+      ```json
+      {
+        "intent": "string"
+      }
+      ```
 
-  - Response Body:
+    - Response Body:
 
-    ```json
-    {
-      "success": "bool",
-      "data": {
-        "service_id": "int",
-        "service_name": "string",
-      },
-      "error": "string"
-    }
-    ```
+      ```json
+      {
+        "success": "bool",
+        "data": {
+          "service_id": "int",
+          "service_name": "string",
+        },
+        "error": "string"
+      }
+      ```
 
 - `GET /api/healthz`
 
-  - Response Body:
+    - Response Body:
 
-    ```json
-    {
-        "status": "ok"
-    }
-    ```
+      ```json
+      {
+          "status": "ok"
+      }
+      ```
 
 ## O Desafio
 
-Atualmente a URA da Credsystem direciona as ligações para o setor correto com base na solicitação do cliente. O objetivo deste desafio é automatizar esse processo utilizando IA para analisar a solicitação e direcioná-la ao serviço mais adequado.
+Atualmente a URA da Credsystem direciona as ligações para o setor correto com base na solicitação do cliente. O objetivo
+deste desafio é automatizar esse processo utilizando IA para analisar a solicitação e direcioná-la ao serviço mais
+adequado.
 
 Então você deve:
 
-1. Implementar no endpoint `POST /api/find-service` a lógica para determinar o serviço mais adequado com base na solicitação recebida. Utilize técnicas de IA para analisar a solicitação e escolher o serviço correto.
+1. Implementar no endpoint `POST /api/find-service` a lógica para determinar o serviço mais adequado com base na
+   solicitação recebida. Utilize técnicas de IA para analisar a solicitação e escolher o serviço correto.
 
-2. Seu serviço deve ler a variável de ambiente `OPENROUTER_API_KEY` para autenticar as requisições à API da OpenRouter. Ele também deve ler a variável `PORT` para definir a porta em que o serviço irá rodar.
+2. Seu serviço deve ler a variável de ambiente `OPENROUTER_API_KEY` para autenticar as requisições à API da OpenRouter.
+   Ele também deve ler a variável `PORT` para definir a porta em que o serviço irá rodar.
 
-3. No arquivo `./assets/intents_pre_loaded.csv` você encontrará uma lista contendo as 93  intenções iniciais e seus respectivos serviços. Utilize essa lista para treinar seu modelo de IA.
+3. No arquivo `./assets/intents_pre_loaded.csv` você encontrará uma lista contendo as 93 intenções iniciais e seus
+   respectivos serviços. Utilize essa lista para treinar seu modelo de IA.
 
 4. **Não invente serviços, utilize um dos 17 serviços** listados:
 
@@ -86,13 +91,18 @@ Então você deve:
 
 5. Faça um fork deste repositório criando uma pasta com o nome da sua dupla no diretório `participantes`.
 
-6. Faça o build da sua imagem Docker e disponibilize em algum repositório público (Docker Hub, GitHub Container Registry, etc).
+6. Faça o build da sua imagem Docker e disponibilize em algum repositório público (Docker Hub, GitHub Container
+   Registry, etc).
 
-7. Crie um arquivo docker-compose conforme exemplo na pasta `./examples` para facilitar a execução do seu serviço. Apenas preencher a imagem Docker criada por você.
+7. Crie um arquivo docker-compose conforme exemplo na pasta `./examples` para facilitar a execução do seu serviço.
+   Apenas preencher a imagem Docker criada por você.
 
-8. Sua API só terá direito a 50% de uma CPU e 128MB de memória RAM. Deixe esse valor fixo no docker-compose conforme exemplo.
+8. Sua API só terá direito a 50% de uma CPU e 128MB de memória RAM. Deixe esse valor fixo no docker-compose conforme
+   exemplo.
 
-9. Seja cuidadoso na hora de escolher o modelo de IA a ser utilizado, lembre-se que o serviço terá recursos limitados. Para mais informaçoes sobre os modelos disponíveis na OpenRouter, consulte a [documentação oficial](https://openrouter.ai/models?o=pricing-high-to-low).
+9. Seja cuidadoso na hora de escolher o modelo de IA a ser utilizado, lembre-se que o serviço terá recursos limitados.
+   Para mais informaçoes sobre os modelos disponíveis na OpenRouter, consulte
+   a [documentação oficial](https://openrouter.ai/models?o=pricing-high-to-low).
 
 ### Critérios de aprovação do PR
 
@@ -101,14 +111,17 @@ Então você deve:
 - O docker-compose.yml deve estar na pasta `participantes/NOME_DA_DUPLA/`.
 - O serviço deve ler uma variável de ambiente: `OPENROUTER_API_KEY`.
 - O serviço deve expor a porta *18020* conforme o exemplo do docker-compose.
-- O serviço deve estar em conformidade com os limites de recursos especificados de 50% de CPU e 128MB de RAM definidos no docker-compose.
+- O serviço deve estar em conformidade com os limites de recursos especificados de 50% de CPU e 128MB de RAM definidos
+  no docker-compose.
 
 ## Critérios de avaliação da entrega
 
 A avaliação será baseada em **duas rodadas de testes**:
 
-1. **Teste 93**: Retornar corretamente os serviços para as 93 intenções fornecidas no arquivo `./assets/intents_pre_loaded.csv`.
-2. **Teste 80**: Retornar o serviço mais adequado para 80 intenções similares (*5 para cada serviço*). Neste caso essas intenções não estão no CSV fornecido e serão base para execução da segunda rodada de testes.
+1. **Teste 93**: Retornar corretamente os serviços para as 93 intenções fornecidas no arquivo
+   `./assets/intents_pre_loaded.csv`.
+2. **Teste 80**: Retornar o serviço mais adequado para 80 intenções similares (*5 para cada serviço*). Neste caso essas
+   intenções não estão no CSV fornecido e serão base para execução da segunda rodada de testes.
 
 ### Sistema de Pontuação
 
@@ -134,7 +147,8 @@ Os participantes serão ranqueados pela **maior pontuação total**. Quanto maio
 Recomendamos o uso dos seguintes modelos da OpenRouter, que oferecem um bom equilíbrio entre desempenho e custo:
 
 - **Mistral 7B**: Um modelo eficiente e econômico, ideal para tarefas de compreensão de linguagem natural.
-- **openai/gpt-4o-mini**: Um modelo compacto e eficiente, ideal para aplicações que requerem um bom desempenho em um pacote menor.
+- **openai/gpt-4o-mini**: Um modelo compacto e eficiente, ideal para aplicações que requerem um bom desempenho em um
+  pacote menor.
 
 ## Consultar créditos restantes na OpenRouter
 

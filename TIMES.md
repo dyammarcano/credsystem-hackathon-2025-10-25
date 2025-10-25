@@ -42,7 +42,7 @@ https://vault.raphaelrossi.io/#/send/0ueBzJ52TAOA3WfreqJ3rA/iEkDDu6EfNruPzH6mDSz
 
 https://vault.raphaelrossi.io/#/send/aFY2TE--R2CE0Cp0e34veg/8UXY8eFV2Nt1fPsAGbEpiQ
 
-## Pioneiros do Ponteiro 7 
+## Pioneiros do Ponteiro 7
 
 - Tiago dos Santos
 - Lucas de Souza Stoller
