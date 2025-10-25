@@ -20,4 +20,6 @@ COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certifica
 # Copy the built binary from the build stage
 COPY --from=build /app /app
 
+EXPOSE 8080
+
 ENTRYPOINT ["/app"]

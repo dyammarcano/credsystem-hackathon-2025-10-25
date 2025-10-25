@@ -17,20 +17,15 @@ func Service(_ *cobra.Command, _ []string) error {
 		return fmt.Errorf("environment variable OPENROUTER_API_KEY is required")
 	}
 
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "18020"
-	}
-
 	router := http.NewServeMux()
 
 	server := http.Server{
-		Addr:    fmt.Sprintf(":%s", port),
+		Addr:    ":8080",
 		Handler: forceStatusOK(router),
 	}
 
 	urlStr := "https://openrouter.ai/api/v1"
-	token := fmt.Sprintf("%s", openRouterKey)
+	token := openRouterKey
 
 	opts := openrouter.WithAuth(token)
 
